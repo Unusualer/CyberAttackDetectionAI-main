@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyber-defense-backend
+  namespace: cyber-defense
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cyber-defense-backend
+  template:
+    metadata:
+      labels:
+        app: cyber-defense-backend
+    spec:
+      containers:
+      - name: backend
+        image: cyber-defense-backend:latest
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8000
+        env:
+          - name: ENVIRONMENT
+            value: "production"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+      - name: ml-engine
+        image: your-repo/cyber-defense-ml:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: models-volume
+          mountPath: /app/models
+
+      volumes:
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: models-pvc 

@@ -1,0 +1,30 @@
+{
+    "dos_attack": {
+        "features": [
+            "high_traffic",
+            "connection_flood",
+            "resource_exhaustion"
+        ],
+        "severity": "high",
+        "description": "Denial of Service attack pattern",
+        "indicators": {
+            "traffic_threshold": 1000,
+            "connection_rate": 100,
+            "resource_usage": 0.9
+        }
+    },
+    "brute_force": {
+        "features": [
+            "failed_logins",
+            "rapid_attempts",
+            "credential_stuffing"
+        ],
+        "severity": "medium",
+        "description": "Brute force attack pattern",
+        "indicators": {
+            "failed_login_threshold": 10,
+            "attempt_rate": 5,
+            "time_window": 300
+        }
+    }
+}

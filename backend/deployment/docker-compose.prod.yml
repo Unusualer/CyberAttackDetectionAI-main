@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  backend:
+    image: your-repo/cyber-defense:latest
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models:/app/models
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend-network
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  ml_engine:
+    image: your-repo/cyber-defense-ml:latest
+    restart: always
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./models:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - backend
+    networks:
+      - backend-network
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    networks:
+      - monitoring-network
+
+networks:
+  backend-network:
+  monitoring-network:
+
+volumes:
+  prometheus_data:
+  grafana_data: 

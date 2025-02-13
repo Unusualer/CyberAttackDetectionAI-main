@@ -1,0 +1,164 @@
+name: Cyber Defense CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: "3.10"
+  POETRY_VERSION: "1.6.1"
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Cache Poetry dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pypoetry
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        poetry install --no-interaction
+
+    - name: Run linting
+      working-directory: ./backend
+      run: |
+        poetry run black . --check
+        poetry run isort . --check-only
+        poetry run pylint app tests
+        poetry run mypy app
+
+    - name: Run tests with coverage
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cyber_defense
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test_secret_key
+        ENVIRONMENT: test
+      run: |
+        poetry run pytest --cov=app --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        fail_ci_if_error: true
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run Bandit
+      working-directory: ./backend
+      run: |
+        pip install bandit
+        bandit -r app -f json -o bandit-results.json
+
+    - name: Run Safety Check
+      working-directory: ./backend
+      run: |
+        pip install safety
+        safety check
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: ./backend
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/cyber-defense:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/cyber-defense:${{ github.sha }}
+        cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cyber-defense:buildcache
+        cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/cyber-defense:buildcache,mode=max
+
+  deploy:
+    name: Deploy to Production
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Deploy to Production
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.PROD_HOST }}
+        username: ${{ secrets.PROD_USERNAME }}
+        key: ${{ secrets.PROD_SSH_KEY }}
+        script: |
+          cd /opt/cyber-defense
+          docker-compose pull
+          docker-compose up -d
+          docker system prune -f
+
+    - name: Notify Deployment Status
+      if: always()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_MESSAGE: 'Production deployment ${{ job.status }}'
+        SLACK_TITLE: Deployment Status

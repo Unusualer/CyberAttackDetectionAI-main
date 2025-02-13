@@ -1,0 +1,29 @@
+groups:
+  - name: cyber_defense_alerts
+    rules:
+      - alert: HighThreatDetectionRate
+        expr: rate(cyber_defense_threats_detected_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High rate of threat detections
+          description: "Threat detection rate is {{ $value }} per second"
+
+      - alert: ModelPerformanceDegraded
+        expr: ml_model_accuracy < 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: ML model performance degraded
+          description: "Model accuracy has dropped to {{ $value }}"
+
+      - alert: HighSystemLoad
+        expr: system_cpu_usage > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High system load detected
+          description: "CPU usage is at {{ $value }}%" 

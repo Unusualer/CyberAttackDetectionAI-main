@@ -1,0 +1,29 @@
+{
+  "dos": {
+    "description": "Denial of Service attack pattern",
+    "indicators": {
+      "high_traffic": "packets_per_second > 1000",
+      "connection_flood": "concurrent_connections > 100",
+      "resource_exhaustion": "cpu_usage > 90 or memory_usage > 90"
+    },
+    "severity": "high"
+  },
+  "brute_force": {
+    "description": "Brute force login attempt pattern",
+    "indicators": {
+      "failed_logins": "login_attempts > 10 per minute",
+      "single_user": "unique_users == 1",
+      "common_services": "port in [22, 3389, 445]"
+    },
+    "severity": "high"
+  },
+  "data_exfil": {
+    "description": "Data exfiltration pattern",
+    "indicators": {
+      "large_outbound": "bytes_sent > 100MB",
+      "unusual_protocol": "protocol in [ftp, unusual_dns]",
+      "sensitive_access": "file_operations > normal_threshold"
+    },
+    "severity": "critical"
+  }
+}

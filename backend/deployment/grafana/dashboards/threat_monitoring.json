@@ -1,0 +1,52 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Cyber Defense Monitoring",
+    "tags": ["cyber-defense", "security"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Threat Detection Rate",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(cyber_defense_threats_detected_total[5m])",
+            "legendFormat": "Threats/min"
+          }
+        ]
+      },
+      {
+        "title": "Model Performance",
+        "type": "gauge",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "ml_model_accuracy",
+            "legendFormat": "Accuracy"
+          }
+        ],
+        "thresholds": [
+          { "value": 0, "color": "red" },
+          { "value": 0.8, "color": "yellow" },
+          { "value": 0.9, "color": "green" }
+        ]
+      },
+      {
+        "title": "System Resources",
+        "type": "graph",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "system_cpu_usage",
+            "legendFormat": "CPU"
+          },
+          {
+            "expr": "system_memory_usage",
+            "legendFormat": "Memory"
+          }
+        ]
+      }
+    ]
+  }
+} 

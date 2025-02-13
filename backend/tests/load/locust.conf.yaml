@@ -1,0 +1,30 @@
+locust:
+  # Test parameters
+  host: http://localhost:8000
+  users: 100
+  spawn-rate: 10
+  run-time: 30m
+  
+  # Test scenarios
+  scenarios:
+    threat_detection:
+      weight: 3
+      target-rps: 50
+      
+    monitoring:
+      weight: 2
+      target-rps: 30
+      
+    health_check:
+      weight: 1
+      target-rps: 10
+      
+  # Thresholds
+  thresholds:
+    response-time-p95: 500  # 95th percentile response time in ms
+    error-rate: 1.0         # Maximum allowed error rate in %
+    
+  # Reporting
+  report:
+    format: html
+    file: load-test-report.html 

@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "cyber-defense-backend"
+version = "0.1.0"
+description = "AI-powered Cyber Attack Detection System"
+authors = ["CyberDefense Team <team@cyberdefense.ai>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+numpy = ">=1.26.0,<2.1.0"
+fastapi = "^0.104.0"
+uvicorn = "^0.24.0"
+sqlalchemy = "^2.0.23"
+alembic = "^1.12.1"
+pydantic = "^2.4.2"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
+tensorflow-cpu = "2.18.0"
+scikit-learn = "^1.3.2"
+lightgbm = "^4.1.0"
+joblib = "^1.3.2"
+prometheus-client = "^0.17.1"
+python-json-logger = "^2.0.7"
+boto3 = "^1.29.0"
+redis = "^5.0.1"
+psutil = "^5.9.6"
+asyncpg = "^0.29.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+black = "^23.11.0"
+isort = "^5.12.0"
+mypy = "^1.7.0"
+pylint = "^3.0.2"
+
+[tool.poetry.extras]
+ml = ["tensorflow-cpu"]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api" 

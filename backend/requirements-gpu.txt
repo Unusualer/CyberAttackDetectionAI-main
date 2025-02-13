@@ -1,0 +1,2 @@
+# Additional requirements for GPU support
+tensorflow-gpu==2.14.0 
