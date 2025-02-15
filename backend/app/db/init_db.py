@@ -8,6 +8,7 @@ from app.core.security import get_password_hash
 from app.models.organization import Organization
 import secrets
 import time
+from datetime import datetime
 
 def wait_for_db(db: Session, max_retries: int = 30, retry_interval: int = 1) -> bool:
     """Wait for database to be ready"""
@@ -46,45 +47,43 @@ def init_db(db: Session) -> None:
         raise Exception("Database not available after maximum retries")
         
     try:
-        # Create tables if they don't exist
-        if not create_tables(db):
-            raise Exception("Failed to create database tables")
-            
-        # Check if we should create first superuser and their organization
+        print("Initializing database with initial data...")
+        # Create default organization if it doesn't exist
+        organization = db.query(Organization).first()
+        if not organization:
+            print("Creating default organization...")
+            organization = Organization(
+                name="Default Organization",
+                api_key=settings.default_api_key,
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(organization)
+            db.commit()
+            db.refresh(organization)
+            print("Default organization created successfully")
+
+        # Create superuser if it doesn't exist
         user = db.query(User).filter(User.email == settings.first_superuser).first()
-        if not user and settings.first_superuser and settings.first_superuser_password:
-            print("Creating first superuser and organization...")
-            
-            try:
-                # Create default organization
-                default_org = Organization(
-                    name="Default Organization",
-                    api_key=secrets.token_urlsafe(32),
-                    is_active=True
-                )
-                db.add(default_org)
-                db.flush()
-                
-                # Create superuser
-                user = User(
-                    email=settings.first_superuser,
-                    hashed_password=get_password_hash(settings.first_superuser_password),
-                    full_name="Default Admin",
-                    is_superuser=True,
-                    organization_id=default_org.id
-                )
-                db.add(user)
-                db.commit()
-                print(f"Created superuser {user.email} with organization {default_org.name}")
-                
-            except IntegrityError as e:
-                print(f"Integrity Error while creating initial data: {str(e)}")
-                db.rollback()
-            except Exception as e:
-                print(f"Error creating initial data: {str(e)}")
-                db.rollback()
-                
+        if not user:
+            print("Creating superuser...")
+            user = User(
+                email=settings.first_superuser,
+                hashed_password=get_password_hash(settings.first_superuser_password),
+                full_name="Initial Super User",
+                is_superuser=True,
+                is_active=True,
+                organization_id=organization.id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            print("Superuser created successfully")
+
     except Exception as e:
-        print(f"Database initialization error: {str(e)}")
         db.rollback()
-        raise
+        print(f"Error in init_db: {str(e)}")
+        raise e

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/securitydb
+      - REDIS_URL=redis://redis:6380/0
+      - FIRST_SUPERUSER=admin@cyberdefense.ai
+      - FIRST_SUPERUSER_PASSWORD=your-secure-password
+      - DEFAULT_API_KEY=your-default-api-key
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=securitydb
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -6,6 +6,12 @@ from datetime import datetime, timedelta
 import joblib
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
+import os
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_directories():
     """Create necessary directories if they don't exist"""
@@ -218,5 +224,33 @@ def initialize_ml_system():
     
     print("ML system initialized successfully!")
 
+def initialize_models():
+    """Initialize and save the initial AI models."""
+    model_path = os.getenv("MODEL_PATH", "/app/ai/models")
+    
+    try:
+        # Create model directory if it doesn't exist
+        os.makedirs(model_path, exist_ok=True)
+
+        # Initialize and save Isolation Forest model for anomaly detection
+        isolation_forest = IsolationForest(
+            n_estimators=100,
+            contamination=0.1,
+            random_state=42
+        )
+        
+        # Save the empty model (will be trained later with actual data)
+        joblib.dump(
+            isolation_forest, 
+            os.path.join(model_path, "isolation_forest.joblib")
+        )
+        
+        logger.info("Successfully initialized ML models")
+        
+    except Exception as e:
+        logger.error(f"Error initializing ML models: {str(e)}")
+        raise
+
 if __name__ == "__main__":
-    initialize_ml_system() 
+    initialize_ml_system()
+    initialize_models() 

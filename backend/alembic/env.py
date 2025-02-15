@@ -1,22 +1,32 @@
+import os
+import sys
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-from app.core.config import settings
-from app.models.models import Base
+from app.db.base_class import Base
+from app.models.models import *  # Import all models
 
+# Add the app directory to the Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import your models
+# from app.models import *
+
+# this is the Alembic Config object
 config = context.config
 
+# Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Get the SQLAlchemy URL from environment variable
+config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+
 target_metadata = Base.metadata
 
-def get_url():
-    return settings.SQLALCHEMY_DATABASE_URI
-
 def run_migrations_offline():
-    url = get_url()
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -28,10 +38,8 @@ def run_migrations_offline():
         context.run_migrations()
 
 def run_migrations_online():
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
-        configuration,
+        config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

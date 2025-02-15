@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..db.base_class import Base
@@ -29,6 +29,8 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
     organization_id = Column(String, ForeignKey("organizations.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     organization = relationship("Organization", back_populates="users")
 
@@ -58,4 +60,30 @@ class SecurityEvent(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     is_resolved = Column(Boolean, default=False)
 
-    agent = relationship("Agent", back_populates="events") 
+    agent = relationship("Agent", back_populates="events")
+
+class AIModel(Base):
+    __tablename__ = "ai_models"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    model_type = Column(String)  # e.g., "classification", "detection"
+    version = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    status = Column(String)  # "active", "training", "archived"
+    metrics = Column(JSON)
+
+    predictions = relationship("AIPrediction", back_populates="model")
+
+class AIPrediction(Base):
+    __tablename__ = "ai_predictions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_id = Column(Integer, ForeignKey("ai_models.id"))
+    input_data = Column(JSON)
+    prediction = Column(JSON)
+    confidence = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    model = relationship("AIModel", back_populates="predictions") 

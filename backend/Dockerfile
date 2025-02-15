@@ -21,10 +21,30 @@ RUN pip config set global.timeout 1000 && \
 
 # Install Python dependencies in stages to better handle failures
 COPY requirements.txt .
+RUN pip install --no-cache-dir bcrypt==4.0.1
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the backend code
-COPY . .
+# Install AI-related dependencies
+RUN pip install --no-cache-dir \
+    torch==2.0.1 \
+    transformers==4.31.0 \
+    scikit-learn==1.3.0 \
+    pandas==2.0.3 \
+    numpy==1.24.3
+
+# Create necessary directories
+RUN mkdir -p /app/ai/models
+
+# Ensure alembic files are in the correct location
+RUN mkdir -p /app/alembic/versions
+COPY alembic.ini /app/
+
+COPY alembic/env.py /app/alembic/
+COPY alembic/script.py.mako /app/alembic/
+COPY alembic/versions/001_initial_migration.py /app/alembic/versions/
+
+# Copy application code
+COPY app /app/app
 
 # Add the application directory to Python path
 ENV PYTHONPATH=/app
@@ -33,19 +53,9 @@ ENV PYTHONUNBUFFERED=1
 # Expose port
 EXPOSE 8000
 
-# Create startup script
-RUN echo '#!/bin/sh\n\
-# Wait for database\n\
-echo "Waiting for database..."\n\
-while ! nc -z db 5432; do\n\
-  sleep 1\n\
-done\n\
-echo "Database is ready!"\n\
-\n\
-# Initialize database with single worker\n\
-echo "Initializing database..."\n\
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1\n\
-' > /app/start.sh && chmod +x /app/start.sh
+# Copy startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
 # Install netcat for database check
 RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*

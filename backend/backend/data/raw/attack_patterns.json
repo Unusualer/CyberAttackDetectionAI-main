@@ -1,0 +1,32 @@
+{
+  "dos_attack": {
+    "features": {
+      "packets_per_second": ">1000",
+      "unique_ips": "<3",
+      "protocol": "tcp/udp",
+      "port_range": "common_ports"
+    },
+    "severity": "high",
+    "description": "Denial of Service attack pattern"
+  },
+  "brute_force": {
+    "features": {
+      "login_attempts": ">10/minute",
+      "failed_ratio": ">0.8",
+      "source_ip": "single",
+      "target_service": "ssh/rdp/web"
+    },
+    "severity": "high",
+    "description": "Brute force attack pattern"
+  },
+  "data_exfiltration": {
+    "features": {
+      "bytes_out": ">normal_threshold",
+      "destination": "external",
+      "time_window": "off_hours",
+      "protocol": "http/ftp/dns"
+    },
+    "severity": "critical",
+    "description": "Data exfiltration pattern"
+  }
+}
