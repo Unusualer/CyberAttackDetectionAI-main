@@ -231,6 +231,25 @@ def initialize_models():
     try:
         # Create model directory if it doesn't exist
         os.makedirs(model_path, exist_ok=True)
+  
+        # Look for any .tar.gz files that might be our model
+        models_dir = "/app/models"
+        model_files = []  # Initialize empty list
+        if os.path.exists(models_dir):
+            model_files = [f for f in os.listdir(models_dir) if f.endswith('.tar.gz')]
+            logger.info(f"Found model files: {model_files}")
+          
+        if model_files:
+            keras_model_path = os.path.join(models_dir, model_files[0])
+            if os.path.exists(keras_model_path):
+                import tarfile
+                with tarfile.open(keras_model_path) as tar:
+                    tar.extractall(path=model_path)
+                logger.info(f"Successfully extracted Keras model from {keras_model_path}")
+            else:
+                logger.warning(f"Keras model file not found at {keras_model_path}")
+        else:
+            logger.warning(f"No Keras model files found in {models_dir}")
 
         # Initialize and save Isolation Forest model for anomaly detection
         isolation_forest = IsolationForest(
@@ -239,7 +258,6 @@ def initialize_models():
             random_state=42
         )
         
-        # Save the empty model (will be trained later with actual data)
         joblib.dump(
             isolation_forest, 
             os.path.join(model_path, "isolation_forest.joblib")

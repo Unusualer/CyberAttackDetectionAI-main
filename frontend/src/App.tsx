@@ -39,7 +39,7 @@ function App() {
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              
+
               {/* Protected Routes */}
               <Route
                 path="/dashboard"
@@ -81,7 +81,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              
+
               {/* Redirect root to dashboard */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>

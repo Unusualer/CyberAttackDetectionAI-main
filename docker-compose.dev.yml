@@ -69,4 +69,4 @@ services:
       - prometheus
 
 volumes:
-  postgres_data: 
+  postgres_data:

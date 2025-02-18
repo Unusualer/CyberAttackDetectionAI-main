@@ -21,7 +21,6 @@ RUN pip config set global.timeout 1000 && \
 
 # Install Python dependencies in stages to better handle failures
 COPY requirements.txt .
-RUN pip install --no-cache-dir bcrypt==4.0.1
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install AI-related dependencies
